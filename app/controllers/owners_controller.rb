@@ -1,4 +1,3 @@
-require 'pry'
 class OwnersController < ApplicationController
 
   get '/owners' do
@@ -15,12 +14,16 @@ class OwnersController < ApplicationController
     @owner = Owner.create(params[:owner])
     if !params["pet"]["name"].empty?
       @owner.pets << Pet.create(name: params["pet"]["name"])
+      # When using the shovel operator, ActiveRecord instantly fires update SQL
+      # without waiting for the save or update call on the parent object,
+      # unless the parent object is a new record.
     end
-    redirect "owners/#{@owner.id}"
+    redirect "/owners/#{@owner.id}"
   end
 
   get '/owners/:id/edit' do
     @owner = Owner.find(params[:id])
+    @pets = Pet.all
     erb :'/owners/edit'
   end
 
@@ -30,15 +33,13 @@ class OwnersController < ApplicationController
   end
 
   patch '/owners/:id' do
-    if !params[:owner].keys.include?("pet_ids")
-        params[:owner]["pet_ids"] = []
-        end
+    @owner = Owner.find(params[:id])
+    @owner.update(params[:owner])
 
-        @owner = Owner.find(params[:id])
-        @owner.update(params["owner"])
-        if !params["pet"]["name"].empty?
-          @owner.pets << Pet.create(name: params["pet"]["name"])
-        end
-        redirect "owners/#{@owner.id}"
+    if !params["pet"]["name"].empty?
+      @owner.pets << Pet.create(name: params["pet"]["name"])
+    end
+
+    redirect "/owners/#{@owner.id}"
   end
 end
